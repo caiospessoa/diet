@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plano Alimentar</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dieta">
+<meta name="theme-color" content="#0f1117">
+<meta name="mobile-web-app-capable" content="yes">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117; --surface: #181c27; --border: #252a38; --accent: #6ee7b7;
+    --muted: #4b5563; --text: #e5e7eb; --text-dim: #9ca3af;
+    --yellow: #fbbf24; --blue: #60a5fa; --red: #f87171; --purple: #a78bfa; --orange: #fb923c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Sora', sans-serif; min-height: 100vh; padding: 20px 14px 48px; }
+
+  header { text-align: center; margin-bottom: 20px; }
+  header .label { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.18em; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; }
+  header h1 { font-size: clamp(20px, 5vw, 28px); font-weight: 700; color: #fff; letter-spacing: -0.02em; }
+
+  .tabs { display: flex; gap: 8px; max-width: 900px; margin: 0 auto 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 6px; }
+  .tab { flex: 1; padding: 10px 12px; border-radius: 8px; border: none; background: transparent; color: var(--text-dim); font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .tab.active-normal { background: rgba(96,165,250,0.12); color: var(--blue); border: 1px solid rgba(96,165,250,0.25); }
+  .tab.active-carb { background: rgba(251,146,60,0.12); color: var(--orange); border: 1px solid rgba(251,146,60,0.25); }
+  .tab:not(.active-normal):not(.active-carb):hover { color: var(--text); background: var(--border); }
+
+  .kcal-wrapper { text-align: center; margin-bottom: 16px; }
+  .kcal-bar { display: inline-flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 100px; padding: 6px 16px; font-family: 'DM Mono', monospace; font-size: 13px; }
+  .kcal-bar.normal { color: var(--blue); }
+  .kcal-bar.carb { color: var(--orange); }
+  .kcal-bar span { color: var(--text-dim); font-size: 11px; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .meal-section { max-width: 900px; margin: 0 auto 14px; }
+  .meal-section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 0 4px; }
+  .meal-section-icon { font-size: 18px; }
+  .meal-section-title { font-size: 12px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .option-tabs { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+  .opt-btn { padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--text-dim); font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  .opt-btn.active { background: var(--surface); color: var(--text); border-color: var(--accent); }
+
+  .option-card { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .option-card.active { display: block; }
+
+  .card-items { padding: 13px 16px; display: flex; flex-direction: column; gap: 7px; }
+  .item { display: flex; align-items: center; gap: 9px; font-size: 13px; }
+  .dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+  .qty { margin-left: auto; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-dim); white-space: nowrap; padding-left: 8px; }
+
+  .macro-strip { display: flex; border-top: 1px solid var(--border); }
+  .macro-cell { flex: 1; padding: 9px 6px; text-align: center; border-right: 1px solid var(--border); }
+  .macro-cell:last-child { border-right: none; }
+  .macro-val { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; }
+  .macro-val.kcal { color: var(--yellow); }
+  .macro-val.prot { color: var(--blue); }
+  .macro-val.carb { color: var(--orange); }
+  .macro-val.fat  { color: var(--purple); }
+  .macro-lbl { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+
+  .sub-section { padding: 9px 16px 11px; background: rgba(0,0,0,0.15); border-top: 1px solid var(--border); }
+  .sub-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; }
+  .sub-items { display: flex; flex-direction: column; gap: 5px; }
+  .sub-item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text-dim); }
+  .sub-item .dot { width: 4px; height: 4px; background: var(--muted); }
+
+  .totals-card { max-width: 900px; margin: 14px auto 0; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+  .totals-header { padding: 11px 16px; border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+  .totals-grid { display: grid; grid-template-columns: repeat(4, 1fr); }
+  .total-cell { padding: 14px 8px; text-align: center; border-right: 1px solid var(--border); }
+  .total-cell:last-child { border-right: none; }
+  .total-val { font-family: 'DM Mono', monospace; font-size: 17px; font-weight: 500; }
+  .total-val.kcal { color: var(--yellow); }
+  .total-val.prot { color: var(--blue); }
+  .total-val.carb { color: var(--orange); }
+  .total-val.fat  { color: var(--purple); }
+  .total-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 3px; }
+
+  .rules-card { max-width: 900px; margin: 14px auto 0; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; }
+  .rules-list { display: flex; flex-direction: column; gap: 7px; margin-top: 10px; }
+  .rule { display: flex; align-items: flex-start; gap: 9px; font-size: 12.5px; color: var(--text-dim); }
+  .rule-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-top: 4px; }
+
+  footer { text-align: center; margin-top: 24px; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); }
+
+  .y { background: var(--yellow); }
+  .b { background: var(--blue); }
+  .p { background: var(--purple); }
+  .r { background: var(--red); }
+  .o { background: var(--orange); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="label">Plano Alimentar</div>
+  <h1>Recomposição Corporal</h1>
+</header>
+
+<div class="tabs">
+  <button class="tab active-normal" onclick="switchTab('normal', this)">📘 Dias Normais</button>
+  <button class="tab" onclick="switchTab('carb', this)">🔥 Dias de Carbo Alto</button>
+</div>
+
+<!-- ===== DIAS NORMAIS ===== -->
+<div id="tab-normal" class="tab-content active">
+  <div class="kcal-wrapper">
+    <div class="kcal-bar normal">⚡ ~1951 kcal <span>/ seg · ter · qui · sex · dom</span></div>
+  </div>
+
+  <!-- CAFÉ -->
+  <div class="meal-section">
+    <div class="meal-section-header"><span class="meal-section-icon">☀️</span><span class="meal-section-title">Café da Manhã · 09:30</span></div>
+    <div class="option-tabs">
+      <button class="opt-btn active" onclick="switchOpt('nb', 1, this)">Principal</button>
+      <button class="opt-btn" onclick="switchOpt('nb', 2, this)">Opção 2</button>
+      <button class="opt-btn" onclick="switchOpt('nb', 3, this)">Opção 3</button>
+    </div>
+    <div id="nb-1" class="option-card active">
+      <div class="card-items">
+        <div class="item"><div class="dot y"></div> Iogurte natural desnatado <span class="qty">170 ml</span></div>
+        <div class="item"><div class="dot y"></div> Whey protein <span class="qty">40 g</span></div>
+        <div class="item"><div class="dot y"></div> Banana <span class="qty">1 un / 130 g</span></div>
+        <div class="item"><div class="dot y"></div> Aveia <span class="qty">15 g</span></div>
+      </div>
+      <div class="macro-strip">
+        <div class="macro-cell"><div class="macro-val kcal">425</div><div class="macro-lbl">kcal</div></div>
+        <div class="macro-cell"><div class="macro-val prot">51g</div><div class="macro-lbl">prot</div></div>
+        <div class="macro-cell"><div class="macro-val carb">41g</div><div class="macro-lbl">carbs</div></div>
+        <div class="macro-cell"><div class="macro-val fat">3g</div><div class="macro-lbl">lip</div></div>
+      </div>
+    </div>
+    <div id="nb-2" class="option-card">
+      <div class="card-items">
+        <div class="item"><div class="dot y"></div> Ovo de galinha <span class="qty">2 un</span></div>
+        <div class="item"><div class="dot y"></div> Farelo de aveia <span class="qty">10 g</span></div>
+        <div class="item"><div class="dot y"></div> Whey protein <span class="qty">30 g</span></div>
+        <div class="item"><div class="dot y"></div> Banana <span class="qty">1 un / 130 g</span></div>
+      </div>
+      <div class="macro-strip">
+        <div class="macro-cell"><div class="macro-val kcal">416</div><div class="macro-lbl">kcal</div></div>
+        <div class="macro-cell"><div class="macro-val prot">41g</div><div class="macro-lbl">prot</div></div>
+        <div class="macro-cell"><div class="macro-val carb">28g</div><div class="macro-lbl">carbs</div></div>
+        <div class="macro-cell"><div class="macro-val fat">14g</div><div class="macro-lbl">lip</div></div>
+      </div>
+    </div>
+    <div id="nb-3" class="option-card">
+      <div class="card-items">
+        <div class="item"><div class="dot y"></div> Pão de forma integral <span class="qty">1 fatia / 25 g</span></div>
+        <div class="item"><div class="dot y"></div> Queijo muçarela <span class="qty">1 fatia / 20 g</span></div>
+        <div class="item"><div class="dot y"></div> Banana <span class="qty">1 un / 130 g</span></div>
+        <div class="item"><div class="dot y"></div> Whey protein <span class="qty">30 g</span></div>
+        <div class="item"><div class="dot y"></div> Doce de leite cremoso <span class="qty">10 g</span></div>
+        <div class="item"><div class="dot y"></div> Canela em pó <span class="qty">à vontade</span></div>
+      </div>
+      <div class="macro-strip">
+        <div class="macro-cell"><div class="macro-val kcal">375</div><div class="macro-lbl">kcal</div></div>
+        <div class="macro-cell"><div class="macro-val prot">35g</div><div class="macro-lbl">prot</div></div>
+        <div class="macro-cell"><div class="macro-val carb">44g</div><div class="macro-lbl">carbs</div></div>
+        <div class="macro-cell"><div class="macro-val fat">9g</div><div class="macro-lbl">lip</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALMOÇO -->
+  <div class="meal-section">
+    <div class="meal-section-header"><span class="meal-section-icon">🍽️</span><span class="meal-section-title">Almoço · meio-dia</span></div>
+    <div id="nl-1" class="option-card active">
+      <div class="card-items">
+        <div class="item"><div class="dot b"></div> Carne grelhada/assada <span class="qty">200 g</span></div>
+        <div class="item"><div class="dot b"></div> Feijão carioca cozido <span class="qty">80 g</span></div>
+        <div class="item"><div class="dot b"></div> Arroz branco cozido <span class="qty">100 g</span></div>
+        <div class="item"><div class="dot b"></div> Legumes cozidos no vapor <span class="qty">100 g</span></div>
+        <div class="item"><div class="dot b"></div> Azeite extravirgem <span class="qty">5 ml</span></div>
+      </div>
+      <div class="macro-strip">
+        <div class="macro-cell"><div class="macro-val kcal">661</div><div class="macro-lbl">kcal</div></div>
+        <div class="macro-cell"><div class="macro-val prot">58g</div><div class="macro-lbl">prot</div></div>
+        <div class="macro-cell"><div class="macro-val carb">52g</div><div class="macro-lbl">carbs</div></div>
+        <div class="macro-cell"><div class="macro-val fat">26g</div><div class="macro-lbl">lip</div></div>
+      </div>
+      <div class="sub-section">
+        <div class="sub-label">↩ Substituição do arroz</div>
+        <div class="sub-items"><div class="sub-item"><div class="dot"></div> Batata inglesa cozida — 170 g</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LANCHE -->
+  <div class="meal-section">
+    <div class="meal-section-header"><span class="meal-section-icon">⚡</span><span class="meal-section-title">Lanche da Tarde · 16:00</span></div>
+    <div class="option-tabs">
+      <button class="opt-btn active" onclick="switchOpt('ns', 1, this)">Principal</button>
+      <button class="opt-btn" onclick="switchOpt('ns', 2, this)">Barrinha</button>
+      <button class="opt-btn" onclick="switchOpt('ns', 3, this)">Opção 3</button>
+    </div>
+    <div id="ns-1" class="option-card active">
+      <div class="card-items">
+        <div class="item"><div class="dot p"></div> Whey protein <span class="qty">40 g</span></div>
+        <div class="item"><div class="dot p"></div> Banana <span class="qty">1 un / 130 g</span></div>
+      </div>
+      <div class="macro-strip">
+        <div class="macro-cell"><div class="macro-val kcal">269</div><div class="macro-lbl">kcal</div></div>
+        <div class="macro-cell"><div class="macro-val prot">32g</div><div class="macro-lbl">prot</div></div>
+        <div class="macro-cell"><div class="macro-val carb">22g</div><div class="macro-lbl">carbs</div></div>
+        <div class="macro-cell"><div class="macro-val fat">2g</div><div class="macro-lbl">lip</div></div>
+      </div>
+    </div>
+    <div id="ns-2" class="option-card">
+      <div class="card-items">
+        <div class="item"><div class="dot p"></div> Barrinha Bold Banoffee <span class="qty">1 un / 60 g</span></div>
+      </div>
+      <div class="macro-strip">
+        <div class="macro-cell"><div class="macro-val kcal">224</div><div class="macro-lbl">kcal</div></div>
+        <div class="macro-cell"><div class="macro-val prot">20g</div><div class="macro-lbl">prot</div></div>
+        <div class="macro-cell"><div class="macro-val carb">18g</div><div class="macro-lbl">carbs</div></div>
+        <div class="macro-cell"><div class="macro-val fat">8g</div><div class="macro-lbl">lip</div></div>
+      </div>
+    </div>
+    <div id="ns-3" class="option-card">
+      <div class="card-items">
+        <div class="item"><div class="dot p"></div> Whey protein <span class="qty">15 g</span></div>
+        <div class="item"><div class="dot p"></div> Farelo de aveia <span class="qty">20 g</span></div>
+        <div class="item"><div class="dot p"></div> Cacau em pó 100% <span class="qty">10 g</span></div>
+        <div class="item"><div class="dot p"></div> Banana <span class="qty">1 un / 130 g</span></div>
+        <div class="item"><div class="dot p"></div> Doce de leite cremoso <span class="qty">10 g</span></div>
+        <div class="item"><div class="dot p"></div> Canela em pó <span class="qty">à vontade</span></div>
+      </div>
+      <div class="macro-strip">
+        <div class="macro-cell"><div class="macro-val kcal">301</div><div class="macro-lbl">kcal</div></div>
+        <div class="macro-cell"><div class="macro-val prot">21g</div><div class="macro-lbl">prot</div></div>
+        <div class="macro-cell"><div class="macro-val carb">48g</div><div class="macro-lbl">carbs</div></div>
+        <div class="macro-cell"><div class="macro-val fat">6g</div><div class="macro-lbl">lip</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JANTAR -->
+  <div class="meal-section">
+    <div class="meal-section-header"><span class="meal-section-icon">🌙</span><span class="meal-section-title">Jantar · 19:30</span></div>
+    <div class="option-tabs">
+      <button class="opt-btn active" onclick="switchOpt('nd', 1, this)">Principal</button>
+      <button class="opt-btn" onclick="switchOpt('nd', 2, this)">Hambúrguer</button>
+      <button class="opt-btn" onclick="switchOpt('nd', 3, this)">Tortilha</button>
+    </div>
+    <div id="nd-1" class="option-card active">
+      <div class="card-items">
+        <div class="item"><div class="dot r"></div> Arroz branco cozido <span class="qty">120 g</span></div>
+        <div class="item"><div class="dot r"></div> Feijão carioca cozido <span class="qty">100 g</span></div>
+        <div class="item"><div class="dot r"></div> Frango desfiado <span class="qty">200 g</span></div>
+        <div class="item"><div class="dot r"></div> Legumes cozidos no vapor <span class="qty">100 g</span></div>
+        <div class="item"><div class="dot r"></div> Azeite extravirgem <span class="qty">10 ml</span></div>
+      </div>
+      <div class="macro-strip">
+        <div class="macro-cell"><div class="macro-val kcal">596</div><div class="macro-lbl">kcal</div></div>
+        <div class="macro-cell"><div class="macro-val prot">61g</div><div class="macro-lbl">prot</div></div>
+        <div class="macro-cell"><div class="macro-val carb">58g</div><div class="macro-lbl">carbs</div></div>
+        <div class="macro-cell"><div class="macro-val fat">12g</div><div class="macro-lbl">lip</div></div>
+      </div>
+      <div class="sub-section">
+        <div class="sub-label">↩ Substituição do arroz</div>
+        <div class="sub-items"><div class="sub-item"><div class="dot"></div> Batata inglesa cozida — 180–200 g</div></div>
+      </div>
+    </div>
+    <div id="nd-2" class="option-card">
+      <div class="card-items">
+        <div class="item"><div class="dot r"></div> Pão de hambúrguer <span class="qty">1 un / 50 g</span></div>
+        <div class="item"><div class="dot r"></div> Queijo muçarela <span class="qty">1 fatia / 20 g</span></div>
+        <div class="item"><div class="dot r"></div> Carne grelhada <span class="qty">200 g</span></div>
+        <div class="item"><div class="dot r"></div> Alface, tomate, rúcula <span class="qty">à vontade</span></div>
+        <div class="item"><div class="dot r"></div> Batata inglesa cozida <span class="qty">100 g</span></div>
+      </div>
+      <div class="macro-strip">
+        <div class="macro-cell"><div class="macro-val kcal">703</div><div class="macro-lbl">kcal</div></div>
+        <div class="macro-cell"><div class="macro-val prot">70g</div><div class="macro-lbl">prot</div></div>
+        <div class="macro-cell"><div class="macro-val carb">78g</div><div class="macro-lbl">carbs</div></div>
+        <div class="macro-cell"><div class="macro-val fat">27g</div><div class="macro-lbl">lip</div></div>
+      </div>
+    </div>
+    <div id="nd-3" class="option-card">
+      <div class="card-items">
+        <div class="item"><div class="dot r"></div> Pão tortilha Rap10 <span class="qty">2 un / 80 g</span></div>
+        <div class="item"><div class="dot r"></div> Frango desfiado <span class="qty">200 g</span></div>
+        <div class="item"><div class="dot r"></div> Queijo muçarela <span class="qty">1 fatia / 20 g</span></div>
+        <div class="item"><div class="dot r"></div> Molho de tomate <span class="qty">à vontade</span></div>
+        <div class="item"><div class="dot r"></div> Tomate + orégano <span class="qty">à vontade</span></div>
+      </div>
+      <div class="macro-strip">
+        <div class="macro-cell"><div class="macro-val kcal">553</div><div class="macro-lbl">kcal</div></div>
+        <div class="macro-cell"><div class="macro-val prot">61g</div><div class="macro-lbl">prot</div></div>
+        <div class="macro-cell"><div class="macro-val carb">46g</div><div class="macro-lbl">carbs</div></div>
+        <div class="macro-cell"><div class="macro-val fat">11g</div><div class="macro-lbl">lip</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="totals-card">
+    <div class="totals-header">📊 Total do Dia — opções principais</div>
+    <div class="totals-grid">
+      <div class="total-cell"><div class="total-val kcal" id="total-kcal-n">~1750</div><div class="total-lbl">kcal</div></div>
+      <div class="total-cell"><div class="total-val prot" id="total-prot-n">~211g</div><div class="total-lbl">proteína</div></div>
+      <div class="total-cell"><div class="total-val carb" id="total-carb-n">~172g</div><div class="total-lbl">carbs</div></div>
+      <div class="total-cell"><div class="total-val fat" id="total-fat-n">~41g</div><div class="total-lbl">lipídios</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DIAS DE CARBO ALTO ===== -->
+<div id="tab-carb" class="tab-content">
+  <div class="kcal-wrapper">
+    <div class="kcal-bar carb">🔥 ~1824 kcal <span>/ quarta (Leg) &amp; sábado (Lower)</span></div>
+  </div>
+
+  <!-- CAFÉ CARBO -->
+  <div class="meal-section">
+    <div class="meal-section-header"><span class="meal-section-icon">☀️</span><span class="meal-section-title">Café da Manhã · 09:30</span></div>
+    <div class="option-tabs">
+      <button class="opt-btn active" onclick="switchOpt('cb', 1, this)">Principal</button>
+      <button class="opt-btn" onclick="switchOpt('cb', 2, this)">Opção 2</button>
+      <button class="opt-btn" onclick="switchOpt('cb', 3, this)">Opção 3</button>
+      <button class="opt-btn" onclick="switchOpt('cb', 4, this)">Opção 4</button>
+    </div>
+    <div id="cb-1" class="option-card active">
+      <div class="card-items">
+        <div class="item"><div class="dot y"></div> Iogurte natural desnatado <span class="qty">170 ml</span></div>
+        <div class="item"><div class="dot y"></div> Whey protein <span class="qty">30 g</span></div>
+        <div class="item"><div class="dot y"></div> Banana <span class="qty">1 un / 130 g</span></div>
+      </div>
+      <div class="macro-strip">
+        <div class="macro-cell"><div class="macro-val kcal">333</div><div class="macro-lbl">kcal</div></div>
+        <div class="macro-cell"><div class="macro-val prot">41g</div><div class="macro-lbl">prot</div></div>
+        <div class="macro-cell"><div class="macro-val carb">28g</div><div class="macro-lbl">carbs</div></div>
+        <div class="macro-cell"><div class="macro-val fat">1g</div><div class="macro-lbl">lip</div></div>
+      </div>
+    </div>
+    <div id="cb-2" class="option-card">
+      <div class="card-items">
+        <div class="item"><div class="dot y"></div> Ovo de galinha <span class="qty">2 un</span></div>
+        <div class="item"><div class="dot y"></div> Farelo de aveia <span class="qty">10 g</span></div>
+        <div class="item"><div class="dot y"></div> Whey protein <span class="qty">15 g</span></div>
+        <div class="item"><div class="dot y"></div> Banana <span class="qty">1 un / 130 g</span></div>
+      </div>
+      <div class="macro-strip">
+        <div class="macro-cell"><div class="macro-val kcal">360</div><div class="macro-lbl">kcal</div></div>
+        <div class="macro-cell"><div class="macro-val prot">29g</div><div class="macro-lbl">prot</div></div>
+        <div class="macro-cell"><div class="macro-val carb">24g</div><div class="macro-lbl">carbs</div></div>
+        <div class="macro-cell"><div class="macro-val fat">12g</div><div class="macro-lbl">lip</div></div>
+      </div>
+    </div>
+    <div id="cb-3" class="option-card">
+      <div class="card-items">
+        <div class="item"><div class="dot y"></div> Pão de forma integral <span class="qty">1 fatia / 25 g</span></div>
+        <div class="item"><div class="dot y"></div> Queijo muçarela <span class="qty">1 fatia / 20 g</span></div>
+        <div class="item"><div class="dot y"></div> Banana <span class="qty">2 un / 130 g</span></div>
+        <div class="item"><div class="dot y"></div> Whey protein <span class="qty">15 g</span></div>
+        <div class="item"><div class="dot y"></div> Doce de leite cremoso <span class="qty">10 g</span></div>
+        <div class="item"><div class="dot y"></div> Canela em pó <span class="qty">à vontade</span></div>
+      </div>
+      <div class="macro-strip">
+        <div class="macro-cell"><div class="macro-val kcal">319</div><div class="macro-lbl">kcal</div></div>
+        <div class="macro-cell"><div class="macro-val prot">27g</div><div class="macro-lbl">prot</div></div>
+        <div class="macro-cell"><div class="macro-val carb">42g</div><div class="macro-lbl">carbs</div></div>
+        <div class="macro-cell"><div class="macro-val fat">8g</div><div class="macro-lbl">lip</div></div>
+      </div>
+    </div>
+    <div id="cb-4" class="option-card">
+      <div class="card-items">
+        <div class="item"><div class="dot y"></div> Ovo de galinha <span class="qty">1 un / 50 g</span></div>
+        <div class="item"><div class="dot y"></div> Banana amassada <span class="qty">1 un / 130 g</span></div>
+        <div class="item"><div class="dot y"></div> Whey protein <span class="qty">15 g</span></div>
+        <div class="item"><div class="dot y"></div> Farelo de aveia <span class="qty">40 g</span></div>
+        <div class="item"><div class="dot y"></div> Cacau em pó 100% <span class="qty">10 g</span></div>
+        <div class="item"><div class="dot y"></div> Canela em pó <span class="qty">à vontade</span></div>
+      </div>
+      <div class="macro-strip">
+        <div class="macro-cell"><div class="macro-val kcal">418</div><div class="macro-lbl">kcal</div></div>
+        <div class="macro-cell"><div class="macro-val prot">24g</div><div class="macro-lbl">prot</div></div>
+        <div class="macro-cell"><div class="macro-val carb">51g</div><div class="macro-lbl">carbs</div></div>
+        <div class="macro-cell"><div class="macro-val fat">13g</div><div class="macro-lbl">lip</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALMOÇO CARBO -->
+  <div class="meal-section">
+    <div class="meal-section-header"><span class="meal-section-icon">🍽️</span><span class="meal-section-title">Almoço · meio-dia · 583 kcal</span></div>
+    <div id="cl-1" class="option-card active">
+      <div class="card-items">
+        <div class="item"><div class="dot o"></div> Arroz branco cozido <span class="qty">200 g</span></div>
+        <div class="item"><div class="dot o"></div> Feijão carioca cozido <span class="qty">100 g</span></div>
+        <div class="item"><div class="dot o"></div> Carne grelhada/assada <span class="qty">100 g</span></div>
+        <div class="item"><div class="dot o"></div> Legumes cozidos no vapor <span class="qty">100 g</span></div>
+        <div class="item"><div class="dot o"></div> Azeite extravirgem <span class="qty">5 ml</span></div>
+      </div>
+      <div class="macro-strip">
+        <div class="macro-cell"><div class="macro-val kcal">627</div><div class="macro-lbl">kcal</div></div>
+        <div class="macro-cell"><div class="macro-val prot">36g</div><div class="macro-lbl">prot</div></div>
+        <div class="macro-cell"><div class="macro-val carb">82g</div><div class="macro-lbl">carbs</div></div>
+        <div class="macro-cell"><div class="macro-val fat">18g</div><div class="macro-lbl">lip</div></div>
+      </div>
+      <div class="sub-section">
+        <div class="sub-label">↩ Substituição do arroz</div>
+        <div class="sub-items"><div class="sub-item"><div class="dot"></div> Batata inglesa cozida — 250 g</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LANCHE CARBO -->
+  <div class="meal-section">
+    <div class="meal-section-header"><span class="meal-section-icon">⚡</span><span class="meal-section-title">Lanche da Tarde · 16:00</span></div>
+    <div class="option-tabs">
+      <button class="opt-btn active" onclick="switchOpt('cs', 1, this)">Principal</button>
+      <button class="opt-btn" onclick="switchOpt('cs', 2, this)">Barrinha</button>
+      <button class="opt-btn" onclick="switchOpt('cs', 3, this)">Opção 3</button>
+    </div>
+    <div id="cs-1" class="option-card active">
+      <div class="card-items">
+        <div class="item"><div class="dot p"></div> Whey protein <span class="qty">40 g</span></div>
+        <div class="item"><div class="dot p"></div> Banana <span class="qty">1 un / 130 g</span></div>
+      </div>
+      <div class="macro-strip">
+        <div class="macro-cell"><div class="macro-val kcal">269</div><div class="macro-lbl">kcal</div></div>
+        <div class="macro-cell"><div class="macro-val prot">32g</div><div class="macro-lbl">prot</div></div>
+        <div class="macro-cell"><div class="macro-val carb">22g</div><div class="macro-lbl">carbs</div></div>
+        <div class="macro-cell"><div class="macro-val fat">2g</div><div class="macro-lbl">lip</div></div>
+      </div>
+    </div>
+    <div id="cs-2" class="option-card">
+      <div class="card-items">
+        <div class="item"><div class="dot p"></div> Barrinha Bold Banoffee <span class="qty">1 un / 60 g</span></div>
+      </div>
+      <div class="macro-strip">
+        <div class="macro-cell"><div class="macro-val kcal">224</div><div class="macro-lbl">kcal</div></div>
+        <div class="macro-cell"><div class="macro-val prot">20g</div><div class="macro-lbl">prot</div></div>
+        <div class="macro-cell"><div class="macro-val carb">18g</div><div class="macro-lbl">carbs</div></div>
+        <div class="macro-cell"><div class="macro-val fat">8g</div><div class="macro-lbl">lip</div></div>
+      </div>
+    </div>
+    <div id="cs-3" class="option-card">
+      <div class="card-items">
+        <div class="item"><div class="dot p"></div> Whey protein <span class="qty">15 g</span></div>
+        <div class="item"><div class="dot p"></div> Farelo de aveia <span class="qty">20 g</span></div>
+        <div class="item"><div class="dot p"></div> Cacau em pó 100% <span class="qty">10 g</span></div>
+        <div class="item"><div class="dot p"></div> Banana <span class="qty">1 un / 130 g</span></div>
+        <div class="item"><div class="dot p"></div> Doce de leite cremoso <span class="qty">10 g</span></div>
+        <div class="item"><div class="dot p"></div> Canela em pó <span class="qty">à vontade</span></div>
+      </div>
+      <div class="macro-strip">
+        <div class="macro-cell"><div class="macro-val kcal">301</div><div class="macro-lbl">kcal</div></div>
+        <div class="macro-cell"><div class="macro-val prot">21g</div><div class="macro-lbl">prot</div></div>
+        <div class="macro-cell"><div class="macro-val carb">48g</div><div class="macro-lbl">carbs</div></div>
+        <div class="macro-cell"><div class="macro-val fat">6g</div><div class="macro-lbl">lip</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JANTAR CARBO -->
+  <div class="meal-section">
+    <div class="meal-section-header"><span class="meal-section-icon">🌙</span><span class="meal-section-title">Jantar · 19:30 · ~590 kcal</span></div>
+    <div class="option-tabs">
+      <button class="opt-btn active" onclick="switchOpt('cd', 1, this)">Principal</button>
+      <button class="opt-btn" onclick="switchOpt('cd', 2, this)">Hambúrguer</button>
+      <button class="opt-btn" onclick="switchOpt('cd', 3, this)">Tortilha</button>
+    </div>
+    <div id="cd-1" class="option-card active">
+      <div class="card-items">
+        <div class="item"><div class="dot o"></div> Arroz branco cozido <span class="qty">200 g</span></div>
+        <div class="item"><div class="dot o"></div> Feijão carioca cozido <span class="qty">100 g</span></div>
+        <div class="item"><div class="dot o"></div> Frango desfiado <span class="qty">100 g</span></div>
+        <div class="item"><div class="dot o"></div> Legumes cozidos no vapor <span class="qty">100 g</span></div>
+        <div class="item"><div class="dot o"></div> Azeite extravirgem <span class="qty">10 ml</span></div>
+      </div>
+      <div class="macro-strip">
+        <div class="macro-cell"><div class="macro-val kcal">595</div><div class="macro-lbl">kcal</div></div>
+        <div class="macro-cell"><div class="macro-val prot">38g</div><div class="macro-lbl">prot</div></div>
+        <div class="macro-cell"><div class="macro-val carb">82g</div><div class="macro-lbl">carbs</div></div>
+        <div class="macro-cell"><div class="macro-val fat">11g</div><div class="macro-lbl">lip</div></div>
+      </div>
+    </div>
+    <div id="cd-2" class="option-card">
+      <div class="card-items">
+        <div class="item"><div class="dot o"></div> Pão de hambúrguer <span class="qty">1 un / 50 g</span></div>
+        <div class="item"><div class="dot o"></div> Queijo muçarela <span class="qty">1 fatia / 20 g</span></div>
+        <div class="item"><div class="dot o"></div> Carne grelhada <span class="qty">100 g</span></div>
+        <div class="item"><div class="dot o"></div> Alface, tomate, rúcula <span class="qty">à vontade</span></div>
+        <div class="item"><div class="dot o"></div> Batata inglesa cozida <span class="qty">200 g</span></div>
+      </div>
+      <div class="macro-strip">
+        <div class="macro-cell"><div class="macro-val kcal">566</div><div class="macro-lbl">kcal</div></div>
+        <div class="macro-cell"><div class="macro-val prot">42g</div><div class="macro-lbl">prot</div></div>
+        <div class="macro-cell"><div class="macro-val carb">86g</div><div class="macro-lbl">carbs</div></div>
+        <div class="macro-cell"><div class="macro-val fat">14g</div><div class="macro-lbl">lip</div></div>
+      </div>
+    </div>
+    <div id="cd-3" class="option-card">
+      <div class="card-items">
+        <div class="item"><div class="dot o"></div> Pão tortilha Rap10 <span class="qty">3 un / 120 g</span></div>
+        <div class="item"><div class="dot o"></div> Frango desfiado <span class="qty">100 g</span></div>
+        <div class="item"><div class="dot o"></div> Queijo muçarela <span class="qty">1 fatia / 20 g</span></div>
+        <div class="item"><div class="dot o"></div> Molho de tomate <span class="qty">à vontade</span></div>
+        <div class="item"><div class="dot o"></div> Tomate + orégano <span class="qty">à vontade</span></div>
+      </div>
+      <div class="macro-strip">
+        <div class="macro-cell"><div class="macro-val kcal">563</div><div class="macro-lbl">kcal</div></div>
+        <div class="macro-cell"><div class="macro-val prot">44g</div><div class="macro-lbl">prot</div></div>
+        <div class="macro-cell"><div class="macro-val carb">64g</div><div class="macro-lbl">carbs</div></div>
+        <div class="macro-cell"><div class="macro-val fat">12g</div><div class="macro-lbl">lip</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="totals-card">
+    <div class="totals-header">📊 Total do Dia — opções principais</div>
+    <div class="totals-grid">
+      <div class="total-cell"><div class="total-val kcal" id="total-kcal-c">~2006</div><div class="total-lbl">kcal</div></div>
+      <div class="total-cell"><div class="total-val prot" id="total-prot-c">~149g</div><div class="total-lbl">proteína</div></div>
+      <div class="total-cell"><div class="total-val carb" id="total-carb-c">~200g</div><div class="total-lbl">carbs</div></div>
+      <div class="total-cell"><div class="total-val fat" id="total-fat-c">~30g</div><div class="total-lbl">lipídios</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- REGRAS -->
+<div class="rules-card">
+  <div class="sub-label">📋 Regras Gerais</div>
+  <div class="rules-list">
+    <div class="rule"><div class="rule-dot"></div> Proteína alta todos os dias</div>
+    <div class="rule"><div class="rule-dot"></div> Nunca pular carbo completamente</div>
+    <div class="rule"><div class="rule-dot"></div> Dias de carbo alto: quarta (Leg) e sábado (Lower)</div>
+    <div class="rule"><div class="rule-dot"></div> Ajustar arroz/batata conforme fome</div>
+    <div class="rule"><div class="rule-dot"></div> Consistência &gt; perfeição</div>
+  </div>
+</div>
+
+<footer>recomposição corporal · carb cycling · qua &amp; sáb = carbo alto</footer>
+
+<script>
+  // Macros per option: [kcal, prot, carb, fat]
+  const macros = {
+    // Normal day
+    'nb-1': [320, 44, 37, 1],
+    'nb-2': [390, 39, 31, 12],
+    'nb-3': [347, 33, 40, 6],
+    'nl-1': [600, 63, 42, 22],
+    'ns-1': [280, 33, 38, 1],
+    'ns-2': [224, 20, 18, 8],
+    'ns-3': [290, 19, 48, 4],
+    'nd-1': [650, 71, 55, 17],
+    'nd-2': [613, 65, 41, 22],
+    'nd-3': [651, 70, 37, 23],
+    // Carb day
+    'cb-1': [291, 33, 34, 1],
+    'cb-2': [345, 28, 28, 12],
+    'cb-3': [361, 22, 56, 7],
+    'cb-4': [367, 28, 39, 11],
+    'cl-1': [583, 39, 80, 14],
+    'cs-1': [280, 33, 38, 1],
+    'cs-2': [224, 20, 18, 8],
+    'cs-3': [256, 19, 36, 4],
+    'cd-1': [594, 43, 79, 14],
+    'cd-2': [584, 42, 77, 14],
+    'cd-3': [578, 44, 55, 19],
+  };
+
+  function getActiveId(group) {
+    let i = 1;
+    while (document.getElementById(group + '-' + i)) {
+      if (document.getElementById(group + '-' + i).classList.contains('active')) return group + '-' + i;
+      i++;
+    }
+    return null;
+  }
+
+  function updateTotals(tab) {
+    const groups = tab === 'normal'
+      ? ['nb', 'nl', 'ns', 'nd']
+      : ['cb', 'cl', 'cs', 'cd'];
+
+    let total = [0, 0, 0, 0];
+    groups.forEach(g => {
+      const id = getActiveId(g);
+      if (id && macros[id]) {
+        macros[id].forEach((v, i) => total[i] += v);
+      }
+    });
+
+    const suffix = tab === 'normal' ? '-n' : '-c';
+    document.getElementById('total-kcal' + suffix).textContent = '~' + total[0];
+    document.getElementById('total-prot' + suffix).textContent = '~' + total[1] + 'g';
+    document.getElementById('total-carb' + suffix).textContent = '~' + total[2] + 'g';
+    document.getElementById('total-fat' + suffix).textContent  = '~' + total[3] + 'g';
+  }
+
+  function switchTab(tab, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active-normal', 'active-carb'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    btn.classList.add(tab === 'normal' ? 'active-normal' : 'active-carb');
+  }
+
+  function switchOpt(group, num, btn) {
+    let i = 1;
+    while (document.getElementById(group + '-' + i)) {
+      document.getElementById(group + '-' + i).classList.remove('active');
+      i++;
+    }
+    document.getElementById(group + '-' + num).classList.add('active');
+    btn.closest('.meal-section').querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const tab = group.startsWith('n') ? 'normal' : 'carb';
+    updateTotals(tab);
+  }
+
+  // Init totals on load
+  updateTotals('normal');
+  updateTotals('carb');
+</script>
+</body>
+</html>
