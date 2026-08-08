@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Plano Alimentar — Caio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#E7E9DC;
+    --paper-card:#F6F5EC;
+    --ink:#202B21;
+    --ink-soft:#5B665B;
+    --mango:#DE9138;
+    --sage:#5C7A52;
+    --azul:#3E7089;
+    --plum:#5B4066;
+    --line: rgba(32,43,33,0.12);
+    --radius: 18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+  body{padding-bottom:60px;}
+  .mono{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;}
+  .display{font-family:'Fraunces',serif;}
+
+  /* ---------- HERO / ARC ---------- */
+  .hero{
+    padding:28px 20px 18px;
+    background:linear-gradient(180deg, var(--paper) 0%, var(--paper) 100%);
+    position:relative;
+  }
+  .hero .eyebrow{
+    font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:4px;
+  }
+  .hero h1{
+    font-family:'Fraunces',serif; font-weight:600; font-size:28px; margin:0 0 18px 0; letter-spacing:-.01em;
+  }
+  .hero h1 em{font-style:italic; font-weight:400; color:var(--ink-soft);}
+
+  .arc-wrap{ position:relative; width:100%; }
+  .arc-wrap svg{ width:100%; height:auto; display:block; overflow:visible; }
+  .arc-label{
+    font-family:'IBM Plex Mono',monospace; font-size:10px; fill:var(--ink-soft); letter-spacing:.05em;
+  }
+  .now-pin{ transition: cx .4s ease; }
+
+  /* ---------- MACRO SUMMARY ---------- */
+  .macro-summary{
+    margin: 4px 20px 22px;
+    background: var(--paper-card);
+    border-radius: var(--radius);
+    padding: 18px 18px 14px;
+    box-shadow: 0 1px 0 var(--line) inset;
+  }
+  .macro-summary .title{
+    font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-soft); margin-bottom:12px;
+  }
+  .macro-row{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .macro-row:last-child{margin-bottom:0;}
+  .macro-name{ width:64px; font-size:12px; color:var(--ink-soft); flex-shrink:0; }
+  .macro-track{ flex:1; height:8px; border-radius:6px; background:rgba(32,43,33,0.08); overflow:hidden; }
+  .macro-fill{ height:100%; border-radius:6px; transition:width .5s ease; }
+  .macro-val{ width:96px; text-align:right; font-size:12px; flex-shrink:0; }
+
+  .saldo-row{
+    margin-top:14px; padding-top:12px; border-top:1px dashed var(--line);
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .saldo-label{ font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); }
+  .saldo-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px 20px; }
+  .saldo-item{ display:flex; justify-content:space-between; align-items:baseline; }
+  .saldo-item-label{ font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em; }
+  .saldo-item-val{ font-size:15px; font-weight:600; color:var(--ink); }
+  .saldo-item-val.over{ color:#A8483A; }
+
+  /* ---------- TIMELINE ---------- */
+  .timeline{ margin: 0 20px; position:relative; }
+  .meal-card{
+    background: var(--paper-card);
+    border-radius: var(--radius);
+    margin-bottom:16px;
+    padding: 16px 16px 14px;
+    border-left: 5px solid var(--accent);
+    position:relative;
+  }
+  .meal-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  .meal-time{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft); letter-spacing:.03em; }
+  .meal-title{ font-family:'Fraunces',serif; font-weight:600; font-size:19px; margin:2px 0 0; }
+  .check{
+    width:28px; height:28px; border-radius:50%; border:2px solid var(--accent);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0; cursor:pointer;
+    background:transparent; transition: background .2s ease;
+  }
+  .check.done{ background:var(--accent); }
+  .check svg{ width:14px; height:14px; stroke:var(--paper-card); stroke-width:3; fill:none; opacity:0; transition:opacity .15s ease;}
+  .check.done svg{ opacity:1; }
+
+  .meal-items{ list-style:none; margin:12px 0 0; padding:0; font-size:14px; }
+  .meal-items li{ padding:5px 0; border-bottom:1px dashed var(--line); display:flex; justify-content:space-between; gap:8px;}
+  .meal-items li:last-child{ border-bottom:none; }
+  .meal-items li .qty{ color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; font-size:12px; white-space:nowrap; }
+  .qty-edit{ display:flex; align-items:center; gap:5px; flex-shrink:0; }
+  .qty-input{
+    width:48px; text-align:right; border:1px solid var(--line); border-radius:6px; padding:3px 5px;
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink); background:#fff;
+  }
+  .qty-unit{ color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; font-size:12px; white-space:nowrap; }
+
+  .option-tabs{ display:flex; gap:8px; margin-top:12px; }
+  .option-tab{
+    flex:1; text-align:center; padding:7px 6px; border-radius:10px; font-size:12px; font-weight:500;
+    background:rgba(32,43,33,0.06); cursor:pointer; border:1px solid transparent; color:var(--ink-soft);
+  }
+  .option-tab.active{ background:var(--accent); color:#fff; border-color:var(--accent); }
+
+  .macro-chips{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+  .chip{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; background:rgba(32,43,33,0.06);
+    padding:4px 9px; border-radius:20px; color:var(--ink-soft);
+  }
+
+  /* ---------- DESVIO (registro fora do plano) ---------- */
+  .desvio-btn{
+    margin-top:12px; width:100%; padding:9px 10px; border-radius:10px; border:1px dashed var(--accent);
+    background:transparent; color:var(--accent); font-size:12px; font-weight:600; cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .desvio-panel{ margin-top:10px; }
+  .desvio-input{
+    width:100%; min-height:60px; border-radius:10px; border:1px solid var(--line); padding:10px;
+    font-family:'Inter',sans-serif; font-size:13px; resize:vertical; background:#fff; color:var(--ink);
+  }
+  .desvio-macro-inputs{ display:flex; gap:6px; margin-top:8px; }
+  .desvio-num{
+    flex:1; min-width:0; border-radius:8px; border:1px solid var(--line); padding:8px 6px;
+    font-family:'IBM Plex Mono',monospace; font-size:12px; background:#fff; color:var(--ink); text-align:center;
+  }
+  .desvio-calc{
+    margin-top:8px; width:100%; padding:9px; border:none; border-radius:10px; background:var(--accent);
+    color:#fff; font-weight:600; font-size:13px; cursor:pointer; font-family:'Inter',sans-serif;
+  }
+  .desvio-calc:disabled{ opacity:.6; }
+  .desvio-status{ margin-top:6px; font-size:11px; color:var(--ink-soft); min-height:14px; }
+  .desvio-badge{
+    display:inline-block; margin-top:2px; font-size:11px; font-weight:600; letter-spacing:.04em;
+    color:var(--accent); text-transform:uppercase;
+  }
+  .desvio-text{ font-size:14px; margin:6px 0 0; color:var(--ink); line-height:1.5; }
+  .link-btn{
+    display:block; margin-top:10px; background:none; border:none; padding:0; font-size:12px;
+    color:var(--ink-soft); text-decoration:underline; cursor:pointer; font-family:'Inter',sans-serif;
+  }
+
+  /* ---------- ITEM EXTRA (adicionado manualmente) ---------- */
+  .extra-item{ background:rgba(32,43,33,0.03); border-radius:8px; padding:6px 8px !important; margin:2px 0; border-bottom:none !important; }
+  .extra-tag{
+    font-size:9px; text-transform:uppercase; letter-spacing:.05em; background:rgba(32,43,33,0.08);
+    padding:2px 6px; border-radius:8px; margin-left:6px; color:var(--ink-soft);
+  }
+  .remove-extra{
+    background:none; border:none; color:var(--ink-soft); font-size:16px; line-height:1; cursor:pointer; padding:0 2px;
+  }
+  .add-item-btn{
+    margin-top:10px; width:100%; padding:9px 10px; border-radius:10px; border:1px dashed var(--accent);
+    background:transparent; color:var(--accent); font-size:12px; font-weight:600; cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .add-item-panel{ margin-top:10px; }
+  .add-name{
+    width:100%; border-radius:10px; border:1px solid var(--line); padding:9px 10px;
+    font-family:'Inter',sans-serif; font-size:13px; background:#fff; color:var(--ink);
+  }
+  .add-qty-row{ display:flex; align-items:center; gap:8px; margin-top:8px; }
+  .add-qty-row .qty-input{ width:70px; }
+
+  /* ---------- WATER ---------- */
+  .water{
+    margin: 6px 20px 20px;
+    background: var(--paper-card);
+    border-radius: var(--radius);
+    padding: 18px;
+  }
+  .water .title{ font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-soft); margin-bottom:12px; display:flex; justify-content:space-between;}
+  .water-row{ display:flex; align-items:center; gap:14px; }
+  .water-btn{
+    width:36px; height:36px; border-radius:50%; border:none; background:var(--azul); color:#fff;
+    font-size:18px; display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .glasses{ display:flex; gap:4px; flex:1; flex-wrap:wrap; }
+  .glass{ width:14px; height:20px; border-radius:2px 2px 6px 6px; background:rgba(32,43,33,0.08); }
+  .glass.filled{ background:var(--azul); }
+  .water-count{ font-family:'IBM Plex Mono',monospace; font-size:13px; min-width:64px; text-align:right;}
+
+  /* ---------- GUIDELINES ---------- */
+  details.guidelines{ margin: 0 20px 20px; }
+  details.guidelines summary{
+    font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-soft);
+    cursor:pointer; padding:6px 0;
+  }
+  details.guidelines ul{ margin:10px 0 0; padding-left:18px; font-size:14px; line-height:1.6; }
+
+  footer.disclaimer{
+    margin: 0 20px; font-size:11px; color:var(--ink-soft); font-style:italic; line-height:1.5;
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="eyebrow">Plano do dia</div>
+  <h1 id="greeting">Olá, Caio</h1>
+  <div class="arc-wrap">
+    <svg id="arcSvg" viewBox="0 0 340 90"></svg>
+  </div>
+</div>
+
+<div class="macro-summary">
+  <div class="title">Balanço do dia</div>
+  <div class="macro-row"><div class="macro-name">Kcal</div><div class="macro-track"><div class="macro-fill" id="fill-kcal" style="background:var(--mango)"></div></div><div class="macro-val mono" id="val-kcal">0 / 2300</div></div>
+  <div class="macro-row"><div class="macro-name">Proteína</div><div class="macro-track"><div class="macro-fill" id="fill-prot" style="background:var(--sage)"></div></div><div class="macro-val mono" id="val-prot">0 / 180g</div></div>
+  <div class="macro-row"><div class="macro-name">Carboidr.</div><div class="macro-track"><div class="macro-fill" id="fill-carb" style="background:var(--azul)"></div></div><div class="macro-val mono" id="val-carb">0 / 210g</div></div>
+  <div class="macro-row"><div class="macro-name">Gordura</div><div class="macro-track"><div class="macro-fill" id="fill-fat" style="background:var(--plum)"></div></div><div class="macro-val mono" id="val-fat">0 / 40g</div></div>
+  <div class="saldo-row">
+    <span class="saldo-label">Saldo Calórico</span>
+    <div class="saldo-grid">
+      <div class="saldo-item"><span class="saldo-item-label">kcal</span><span class="saldo-item-val mono" id="saldo-kcal">—</span></div>
+      <div class="saldo-item"><span class="saldo-item-label">prot</span><span class="saldo-item-val mono" id="saldo-prot">—</span></div>
+      <div class="saldo-item"><span class="saldo-item-label">carb</span><span class="saldo-item-val mono" id="saldo-carb">—</span></div>
+      <div class="saldo-item"><span class="saldo-item-label">gord</span><span class="saldo-item-val mono" id="saldo-fat">—</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="timeline" id="timeline"></div>
+
+<div class="water">
+  <div class="title"><span>Hidratação</span><span id="waterTarget" class="mono">meta: 10–12 copos</span></div>
+  <div class="water-row">
+    <button class="water-btn" id="waterMinus">–</button>
+    <div class="glasses" id="glasses"></div>
+    <button class="water-btn" id="waterPlus">+</button>
+  </div>
+  <div style="text-align:right;margin-top:8px;"><span class="water-count mono" id="waterCount">0 copos</span></div>
+</div>
+
+<details class="guidelines">
+  <summary>Orientações gerais</summary>
+  <ul>
+    <li>Beber 2,5 a 3L de água por dia 💧</li>
+    <li>Priorizar proteínas grelhadas, cozidas ou assadas.</li>
+    <li>Manter a creatina diariamente, inclusive nos dias sem treino.</li>
+    <li>Ajustar as quantidades conforme evolução do peso, desempenho e fome.</li>
+    <li>Consumir verduras e legumes diariamente para fibras, vitaminas e minerais.</li>
+  </ul>
+</details>
+
+<script>
+const MEALS = [
+  {
+    id:'cafe', accent:'var(--mango)', time:'07h40 – 08h00', title:'Café da Manhã', hour:7.7,
+    items:[
+      { name:'Iogurte zero lactose', qty:150, unit:'ml', per:{kcal:0.55,prot:0.045,carb:0.06,fat:0.018} },
+      { name:'Whey protein', qty:24, unit:'g proteína', per:{kcal:4.2,prot:1,carb:0.08,fat:0.04} },
+      { name:'Banana nanica', qty:1, unit:'un', per:{kcal:90,prot:1.1,carb:23,fat:0.3} },
+      { name:'Farelo de aveia', qty:20, unit:'g', per:{kcal:2.46,prot:0.17,carb:0.66,fat:0.07} }
+    ]
+  },
+  {
+    id:'almoco', accent:'var(--sage)', time:'12h00', title:'Almoço', hour:12,
+    items:[
+      { name:'Arroz', qty:100, unit:'g', per:{kcal:1.30,prot:0.027,carb:0.28,fat:0.003} },
+      { name:'Feijão', qty:100, unit:'g', per:{kcal:1.27,prot:0.087,carb:0.228,fat:0.005} },
+      { name:'Proteína magra (frango / carne / patinho / peixe / lombo)', qty:150, unit:'g', per:{kcal:1.65,prot:0.31,carb:0,fat:0.036} },
+      { name:'Verduras e legumes', unit:'à vontade', fixed:{kcal:50,prot:2,carb:8,fat:0.5} }
+    ]
+  },
+  {
+    id:'lanche', accent:'var(--azul)', time:'16h00', title:'Lanche', hour:16, hasOptions:true,
+    options:[
+      { label:'Opção 1', items:[
+        { name:'Barrinha de proteína', qty:20, unit:'g proteína', per:{kcal:10,prot:1,carb:1,fat:0.35} },
+        { name:'Fruta', qty:1, unit:'un', per:{kcal:80,prot:0.5,carb:20,fat:0.3} }
+      ]},
+      { label:'Opção 2', items:[
+        { name:'Iogurte zero lactose', qty:150, unit:'ml', per:{kcal:0.55,prot:0.045,carb:0.06,fat:0.018} },
+        { name:'Whey protein', qty:24, unit:'g proteína', per:{kcal:4.2,prot:1,carb:0.08,fat:0.04} },
+        { name:'Banana', qty:1, unit:'un', per:{kcal:90,prot:1.1,carb:23,fat:0.3} },
+        { name:'Aveia em flocos', qty:40, unit:'g', per:{kcal:3.89,prot:0.169,carb:0.66,fat:0.069} },
+        { name:'Creatina', qty:5, unit:'g', per:{kcal:0,prot:0,carb:0,fat:0} }
+      ]},
+      { label:'Opção 3', items:[
+        { name:'Morango', qty:120, unit:'g', per:{kcal:0.32,prot:0.007,carb:0.077,fat:0.003} },
+        { name:'Whey protein', qty:24, unit:'g proteína', per:{kcal:4.2,prot:1,carb:0.08,fat:0.04} }
+      ]}
+    ]
+  },
+  {
+    id:'jantar', accent:'var(--plum)', time:'19h00 – 20h00', title:'Jantar', hour:19.5,
+    items:[
+      { name:'Arroz', qty:100, unit:'g', per:{kcal:1.30,prot:0.027,carb:0.28,fat:0.003} },
+      { name:'Feijão', qty:100, unit:'g', per:{kcal:1.27,prot:0.087,carb:0.228,fat:0.005} },
+      { name:'Proteína magra (frango / carne / patinho / peixe / lombo)', qty:150, unit:'g', per:{kcal:1.65,prot:0.31,carb:0,fat:0.036} },
+      { name:'Verduras e legumes', unit:'à vontade', fixed:{kcal:50,prot:2,carb:8,fat:0.5} }
+    ]
+  }
+];
+const TARGETS = { kcal:2300, prot:180, carb:210, fat:40 };
+const WATER_TARGET = 11;
+const DAY_START = 6, DAY_END = 22;
+
+// Tabela de alimentos comuns embutida — valores aproximados por grama/ml, ou por unidade típica.
+const FOOD_DB = {
+  'morango':      { unit:'g',  per:{kcal:0.32, prot:0.007, carb:0.077, fat:0.003} },
+  'banana':       { unit:'g',  per:{kcal:0.90, prot:0.011, carb:0.23,  fat:0.003} },
+  'maca':         { unit:'g',  per:{kcal:0.52, prot:0.003, carb:0.14,  fat:0.002} },
+  'mamao':        { unit:'g',  per:{kcal:0.43, prot:0.005, carb:0.11,  fat:0.001} },
+  'laranja':      { unit:'g',  per:{kcal:0.47, prot:0.009, carb:0.12,  fat:0.001} },
+  'abacate':      { unit:'g',  per:{kcal:1.60, prot:0.02,  carb:0.085, fat:0.15 } },
+  'uva':          { unit:'g',  per:{kcal:0.69, prot:0.007, carb:0.18,  fat:0.002} },
+  'melancia':     { unit:'g',  per:{kcal:0.30, prot:0.006, carb:0.076, fat:0.002} },
+  'ovo':          { unit:'un', per:{kcal:78,   prot:6.3,   carb:0.6,   fat:5.3  } },
+  'pao frances':  { unit:'un', per:{kcal:150,  prot:4,     carb:28,    fat:1.5  } },
+  'pao integral': { unit:'un', per:{kcal:65,   prot:2.5,   carb:12,    fat:0.8  } },
+  'queijo minas': { unit:'g',  per:{kcal:2.64, prot:0.17,  carb:0.03,  fat:0.20 } },
+  'queijo':       { unit:'g',  per:{kcal:3.50, prot:0.25,  carb:0.02,  fat:0.28 } },
+  'leite':        { unit:'ml', per:{kcal:0.35, prot:0.034, carb:0.05,  fat:0.002} },
+  'frango grelhado':{ unit:'g', per:{kcal:1.65, prot:0.31, carb:0,     fat:0.036} },
+  'frango':       { unit:'g',  per:{kcal:1.65, prot:0.31,  carb:0,     fat:0.036} },
+  'carne':        { unit:'g',  per:{kcal:1.72, prot:0.27,  carb:0,     fat:0.065} },
+  'peixe':        { unit:'g',  per:{kcal:0.96, prot:0.20,  carb:0,     fat:0.017} },
+  'tilapia':      { unit:'g',  per:{kcal:0.96, prot:0.20,  carb:0,     fat:0.017} },
+  'batata doce':  { unit:'g',  per:{kcal:0.86, prot:0.016, carb:0.20,  fat:0.001} },
+  'arroz':        { unit:'g',  per:{kcal:1.30, prot:0.027, carb:0.28,  fat:0.003} },
+  'feijao':       { unit:'g',  per:{kcal:1.27, prot:0.087, carb:0.228, fat:0.005} },
+  'aveia':        { unit:'g',  per:{kcal:3.89, prot:0.169, carb:0.66,  fat:0.069} },
+  'pasta de amendoim':{ unit:'g', per:{kcal:5.88, prot:0.25, carb:0.20, fat:0.50 } },
+  'amendoim':     { unit:'g',  per:{kcal:5.67, prot:0.26,  carb:0.16,  fat:0.49 } },
+  'castanha':     { unit:'g',  per:{kcal:6.56, prot:0.14,  carb:0.12,  fat:0.66 } },
+  'azeite':       { unit:'ml', per:{kcal:8.84, prot:0,     carb:0,     fat:1.0  } },
+  'mel':          { unit:'g',  per:{kcal:3.04, prot:0.003, carb:0.82,  fat:0    } },
+  'iogurte':      { unit:'ml', per:{kcal:0.55, prot:0.045, carb:0.06,  fat:0.018} }
+};
+
+function normalizeName(s){
+  return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+}
+function matchFood(name){
+  const n = normalizeName(name);
+  if(!n) return null;
+  if(FOOD_DB[n]) return FOOD_DB[n];
+  const key = Object.keys(FOOD_DB).find(k => n.includes(k) || k.includes(n));
+  return key ? FOOD_DB[key] : null;
+}
+
+function itemKey(mealId, optIdx, itemIdx){
+  return optIdx==null ? `${mealId}_${itemIdx}` : `${mealId}_opt${optIdx}_${itemIdx}`;
+}
+function extraKey(mealId, optIdx){
+  return optIdx==null ? mealId : `${mealId}_opt${optIdx}`;
+}
+function sumExtra(key){
+  const list = state.extraItems[key] || [];
+  const t = {kcal:0, prot:0, carb:0, fat:0};
+  list.forEach(x=>{ t.kcal+=x.kcal; t.prot+=x.prot; t.carb+=x.carb; t.fat+=x.fat; });
+  return t;
+}
+function getQty(item, key){
+  const stored = state.quantities[key];
+  return (stored!=null && stored!=='') ? Number(stored) : item.qty;
+}
+function itemMacros(item, key){
+  if(item.fixed) return item.fixed;
+  const q = getQty(item, key);
+  return { kcal:q*item.per.kcal, prot:q*item.per.prot, carb:q*item.per.carb, fat:q*item.per.fat };
+}
+function sumItems(items, mealId, optIdx){
+  const t = {kcal:0, prot:0, carb:0, fat:0};
+  items.forEach((it,idx)=>{
+    const m = itemMacros(it, itemKey(mealId, optIdx, idx));
+    t.kcal+=m.kcal; t.prot+=m.prot; t.carb+=m.carb; t.fat+=m.fat;
+  });
+  return t;
+}
+
+function dateKey(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+let state = { checked:{}, lancheOption:0, water:0, overrides:{}, quantities:{}, extraItems:{} };
+let openPanels = new Set();
+let openAddPanels = new Set();
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem('day-log:'+dateKey());
+    if(raw){ state = JSON.parse(raw); }
+  }catch(e){ /* sem dados salvos ainda, mantém padrão */ }
+  if(!state.overrides) state.overrides = {};
+  if(!state.quantities) state.quantities = {};
+  if(!state.extraItems) state.extraItems = {};
+}
+function saveState(){
+  try{ localStorage.setItem('day-log:'+dateKey(), JSON.stringify(state)); }
+  catch(e){ console.error('storage error', e); }
+}
+
+function computeTotals(){
+  let t = {kcal:0, prot:0, carb:0, fat:0};
+  MEALS.forEach(m=>{
+    if(!state.checked[m.id]) return;
+    const ov = state.overrides[m.id];
+    if(ov){ t.kcal+=ov.kcal; t.prot+=ov.prot; t.carb+=ov.carb; t.fat+=ov.fat; return; }
+    let o;
+    const optIdx = m.hasOptions ? state.lancheOption : null;
+    if(m.hasOptions){
+      o = sumItems(m.options[optIdx].items, m.id, optIdx);
+    } else {
+      o = sumItems(m.items, m.id, null);
+    }
+    const ex = sumExtra(extraKey(m.id, optIdx));
+    t.kcal += o.kcal+ex.kcal; t.prot += o.prot+ex.prot; t.carb += o.carb+ex.carb; t.fat += o.fat+ex.fat;
+  });
+  return t;
+}
+
+function renderMacros(){
+  const t = computeTotals();
+  const set = (id,val,target,unit)=>{
+    document.getElementById('fill-'+id).style.width = Math.min(100,(val/target)*100)+'%';
+    document.getElementById('val-'+id).textContent = Math.round(val)+' / '+target+unit;
+  };
+  set('kcal', t.kcal, TARGETS.kcal, '');
+  set('prot', t.prot, TARGETS.prot, 'g');
+  set('carb', t.carb, TARGETS.carb, 'g');
+  set('fat', t.fat, TARGETS.fat, 'g');
+
+  const restKcal = Math.round(TARGETS.kcal - t.kcal);
+  const restProt = (TARGETS.prot - t.prot);
+  const restCarb = (TARGETS.carb - t.carb);
+  const restFat  = (TARGETS.fat - t.fat);
+  const setSaldo = (id, val, unit)=>{
+    const el = document.getElementById('saldo-'+id);
+    el.textContent = (val>0?'':'') + (unit? val.toFixed(1) : Math.round(val)) + unit;
+    el.classList.toggle('over', val < 0);
+  };
+  setSaldo('kcal', restKcal, '');
+  setSaldo('prot', restProt, 'g');
+  setSaldo('carb', restCarb, 'g');
+  setSaldo('fat', restFat, 'g');
+}
+
+function renderArc(){
+  const svg = document.getElementById('arcSvg');
+  const w=340,h=90, pad=14;
+  const now = new Date();
+  const nowHour = now.getHours() + now.getMinutes()/60;
+  const xFor = hr => pad + (Math.min(Math.max(hr,DAY_START),DAY_END)-DAY_START)/(DAY_END-DAY_START)*(w-2*pad);
+  const yFor = x => { // simple arc: sine bump
+    const t = (x-pad)/(w-2*pad);
+    return h-16 - Math.sin(t*Math.PI)*46;
+  };
+  let path = '';
+  for(let i=0;i<=40;i++){
+    const x = pad + i/40*(w-2*pad);
+    const y = yFor(x);
+    path += (i===0?'M':'L')+x.toFixed(1)+','+y.toFixed(1)+' ';
+  }
+  const dots = MEALS.map(m=>{
+    const x = xFor(m.hour);
+    const y = yFor(x);
+    const done = state.checked[m.id];
+    return `<circle cx="${x}" cy="${y}" r="6.5" fill="${done? m.accent : '#F6F5EC'}" stroke="${m.accent}" stroke-width="2"/>`;
+  }).join('');
+  const nx = xFor(nowHour);
+  const ny = yFor(nx);
+  const showNow = nowHour>=DAY_START && nowHour<=DAY_END;
+  svg.innerHTML = `
+    <path d="${path}" fill="none" stroke="rgba(32,43,33,0.18)" stroke-width="2" stroke-dasharray="1 6" stroke-linecap="round"/>
+    ${dots}
+    ${showNow?`<circle class="now-pin" cx="${nx}" cy="${ny}" r="4" fill="var(--ink)"/>`:''}
+    <text class="arc-label" x="${pad}" y="${h-2}">6h</text>
+    <text class="arc-label" x="${w-pad-16}" y="${h-2}">22h</text>
+  `;
+}
+
+function iconCheck(){ return '<svg viewBox="0 0 24 24"><polyline points="4,13 9,18 20,6"/></svg>'; }
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function chipsInner(t){
+  return `<span class="chip">${Math.round(t.kcal)} kcal</span><span class="chip">${t.prot.toFixed(1)}g prot</span><span class="chip">${t.carb.toFixed(1)}g carb</span><span class="chip">${t.fat.toFixed(1)}g gord</span>`;
+}
+function renderChips(t, id){
+  return `<div class="macro-chips" id="${id}">${chipsInner(t)}</div>`;
+}
+function refreshMealChips(mealId){
+  const m = MEALS.find(mm=>mm.id===mealId);
+  if(!m || state.overrides[mealId]) return;
+  const optIdx = m.hasOptions ? state.lancheOption : null;
+  const items = m.hasOptions ? m.options[optIdx].items : m.items;
+  const t = sumItems(items, mealId, optIdx);
+  const ex = sumExtra(extraKey(mealId, optIdx));
+  const chipsEl = document.getElementById(`chips-${mealId}`);
+  if(chipsEl) chipsEl.innerHTML = chipsInner({kcal:t.kcal+ex.kcal, prot:t.prot+ex.prot, carb:t.carb+ex.carb, fat:t.fat+ex.fat});
+}
+
+function renderItemsList(items, mealId, optIdx){
+  return items.map((it,idx)=>{
+    if(it.fixed){
+      return `<li><span>${it.name}</span><span class="qty">${it.unit}</span></li>`;
+    }
+    const key = itemKey(mealId, optIdx, idx);
+    const q = getQty(it, key);
+    return `<li><span>${it.name}</span><span class="qty-edit">
+      <input type="number" inputmode="decimal" class="qty-input" data-qty-key="${key}" data-meal-ref="${mealId}" value="${q}">
+      <span class="qty-unit">${it.unit}</span>
+    </span></li>`;
+  }).join('');
+}
+
+function renderExtraList(key){
+  const list = state.extraItems[key] || [];
+  return list.map(x=>`
+    <li class="extra-item">
+      <span>${escapeHtml(x.name)} <span class="extra-tag">extra</span></span>
+      <span class="qty-edit">
+        <span class="qty-unit mono">${x.kcal}kcal</span>
+        <button class="remove-extra" data-extra-key="${key}" data-extra-id="${x.id}">×</button>
+      </span>
+    </li>
+  `).join('');
+}
+
+function renderAddItemBlock(key){
+  const open = openAddPanels.has(key);
+  return `
+    <button class="add-item-btn" data-add-toggle="${key}">${open?'➖ Cancelar':'➕ Adicionar item'}</button>
+    <div class="add-item-panel" ${open?'':'hidden'}>
+      <input type="text" class="add-name" data-add-name="${key}" placeholder="O que mais você comeu? Ex: morango, ovo, pão francês">
+      <div class="add-qty-row">
+        <input type="number" inputmode="decimal" class="qty-input" data-add-qty="${key}" placeholder="qtd">
+        <span class="qty-unit mono" id="add-unit-${key}">g</span>
+      </div>
+      <div class="desvio-status" id="add-match-${key}"></div>
+      <div class="desvio-macro-inputs" id="add-manual-${key}" hidden>
+        <input type="number" inputmode="numeric" class="desvio-num" id="add-kcal-${key}" placeholder="kcal">
+        <input type="number" inputmode="decimal" class="desvio-num" id="add-prot-${key}" placeholder="prot (g)">
+        <input type="number" inputmode="decimal" class="desvio-num" id="add-carb-${key}" placeholder="carb (g)">
+        <input type="number" inputmode="decimal" class="desvio-num" id="add-fat-${key}" placeholder="gord (g)">
+      </div>
+      <button class="desvio-calc" data-add-save="${key}">Adicionar</button>
+      <div class="desvio-status" id="add-status-${key}"></div>
+    </div>
+  `;
+}
+
+function updateAddPreview(key){
+  const nameEl = document.querySelector(`[data-add-name="${key}"]`);
+  const qtyEl = document.querySelector(`[data-add-qty="${key}"]`);
+  const matchEl = document.getElementById('add-match-'+key);
+  const manualEl = document.getElementById('add-manual-'+key);
+  const unitEl = document.getElementById('add-unit-'+key);
+  if(!nameEl) return;
+  const food = matchFood(nameEl.value);
+  if(food){
+    unitEl.textContent = food.unit;
+    const qty = Number(qtyEl.value) || 0;
+    const m = { kcal:food.per.kcal*qty, prot:food.per.prot*qty, carb:food.per.carb*qty, fat:food.per.fat*qty };
+    matchEl.innerHTML = qty>0
+      ? `✓ encontrado — ${Math.round(m.kcal)}kcal, ${m.prot.toFixed(1)}p, ${m.carb.toFixed(1)}c, ${m.fat.toFixed(1)}g`
+      : `✓ encontrado — informa a quantidade (${food.unit})`;
+    manualEl.hidden = true;
+    manualEl.dataset.computed = JSON.stringify(m);
+  } else {
+    unitEl.textContent = 'g';
+    matchEl.textContent = nameEl.value.trim()==='' ? '' : 'Não achei na tabela — preenche os macros manualmente abaixo.';
+    manualEl.hidden = false;
+  }
+}
+
+function renderTimeline(){
+  const el = document.getElementById('timeline');
+  el.innerHTML = MEALS.map(m=>{
+    const done = !!state.checked[m.id];
+    const override = state.overrides[m.id];
+    const panelOpen = openPanels.has(m.id);
+    let body;
+
+    if(override){
+      body = `
+        <div class="desvio-badge">🧭 Registro Livre</div>
+        <p class="desvio-text">${escapeHtml(override.text)}</p>
+        <div class="macro-chips">
+          <span class="chip">${override.kcal} kcal</span><span class="chip">${override.prot}g prot</span><span class="chip">${override.carb}g carb</span><span class="chip">${override.fat}g gord</span>
+        </div>
+        <button class="link-btn" data-remove-override="${m.id}">↺ voltar ao plano original</button>
+      `;
+    } else {
+      let itemsHtml, extra, chipsId = `chips-${m.id}`;
+      const optIdx = m.hasOptions ? state.lancheOption : null;
+      const eKey = extraKey(m.id, optIdx);
+      if(m.hasOptions){
+        itemsHtml = renderItemsList(m.options[optIdx].items, m.id, optIdx);
+        extra = `<div class="option-tabs">` + m.options.map((o,i)=>
+          `<div class="option-tab ${i===optIdx?'active':''}" data-lanche-opt="${i}">${o.label}</div>`
+        ).join('') + `</div>`;
+      } else {
+        itemsHtml = renderItemsList(m.items, m.id, null);
+        extra = '';
+      }
+      itemsHtml += renderExtraList(eKey);
+      const baseSum = m.hasOptions ? sumItems(m.options[optIdx].items, m.id, optIdx) : sumItems(m.items, m.id, null);
+      const exSum = sumExtra(eKey);
+      extra += renderChips({kcal:baseSum.kcal+exSum.kcal, prot:baseSum.prot+exSum.prot, carb:baseSum.carb+exSum.carb, fat:baseSum.fat+exSum.fat}, chipsId);
+      extra += renderAddItemBlock(eKey);
+      body = `
+        <ul class="meal-items">${itemsHtml}</ul>
+        ${extra}
+        <button class="desvio-btn" data-desvio-toggle="${m.id}">🧭 Registro Livre</button>
+        <div class="desvio-panel" ${panelOpen?'':'hidden'}>
+          <textarea class="desvio-input" id="desvio-input-${m.id}" placeholder="O que você comeu? Ex: prato feito no restaurante — arroz, feijão, bife e salada"></textarea>
+          <div class="desvio-macro-inputs">
+            <input type="number" inputmode="numeric" class="desvio-num" id="desvio-kcal-${m.id}" placeholder="kcal">
+            <input type="number" inputmode="decimal" class="desvio-num" id="desvio-prot-${m.id}" placeholder="prot (g)">
+            <input type="number" inputmode="decimal" class="desvio-num" id="desvio-carb-${m.id}" placeholder="carb (g)">
+            <input type="number" inputmode="decimal" class="desvio-num" id="desvio-fat-${m.id}" placeholder="gord (g)">
+          </div>
+          <button class="desvio-calc" data-desvio-calc="${m.id}">Salvar</button>
+          <div class="desvio-status" id="desvio-status-${m.id}"></div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="meal-card" style="--accent:${m.accent}">
+        <div class="meal-top">
+          <div>
+            <div class="meal-time mono">${m.time}</div>
+            <div class="meal-title">${m.title}</div>
+          </div>
+          <div class="check ${done?'done':''}" data-meal="${m.id}">${iconCheck()}</div>
+        </div>
+        ${body}
+      </div>
+    `;
+  }).join('');
+}
+
+function initTimelineEvents(){
+  const el = document.getElementById('timeline');
+
+  el.addEventListener('input', (ev)=>{
+    const qtyInput = ev.target.closest('[data-qty-key]');
+    if(qtyInput){
+      const key = qtyInput.getAttribute('data-qty-key');
+      const mealId = qtyInput.getAttribute('data-meal-ref');
+      const val = qtyInput.value;
+      if(val === ''){ delete state.quantities[key]; }
+      else { state.quantities[key] = Number(val); }
+      refreshMealChips(mealId);
+      renderMacros();
+      renderArc();
+      saveState();
+      return;
+    }
+    const addName = ev.target.closest('[data-add-name]');
+    const addQty = ev.target.closest('[data-add-qty]');
+    if(addName || addQty){
+      const key = (addName||addQty).getAttribute(addName ? 'data-add-name' : 'data-add-qty');
+      updateAddPreview(key);
+      return;
+    }
+  });
+
+  el.addEventListener('click', async (ev)=>{
+    const lancheOpt = ev.target.closest('[data-lanche-opt]');
+    const desvioToggle = ev.target.closest('[data-desvio-toggle]');
+    const desvioCalc = ev.target.closest('[data-desvio-calc]');
+    const removeOverride = ev.target.closest('[data-remove-override]');
+    const addToggle = ev.target.closest('[data-add-toggle]');
+    const addSave = ev.target.closest('[data-add-save]');
+    const removeExtra = ev.target.closest('[data-extra-key]');
+    const mealBtn = ev.target.closest('[data-meal]');
+
+    if(lancheOpt){
+      ev.stopPropagation();
+      state.lancheOption = parseInt(lancheOpt.getAttribute('data-lanche-opt'));
+      renderTimeline(); renderMacros();
+      saveState();
+      return;
+    }
+    if(desvioToggle){
+      const id = desvioToggle.getAttribute('data-desvio-toggle');
+      if(openPanels.has(id)) openPanels.delete(id); else openPanels.add(id);
+      renderTimeline();
+      return;
+    }
+    if(addToggle){
+      const key = addToggle.getAttribute('data-add-toggle');
+      if(openAddPanels.has(key)) openAddPanels.delete(key); else openAddPanels.add(key);
+      renderTimeline();
+      return;
+    }
+    if(addSave){
+      const key = addSave.getAttribute('data-add-save');
+      const nameEl = document.querySelector(`[data-add-name="${key}"]`);
+      const name = nameEl.value.trim();
+      const manualEl = document.getElementById('add-manual-'+key);
+      const status = document.getElementById('add-status-'+key);
+      if(!name){ status.textContent = 'Escreve o nome do alimento.'; return; }
+      let macros;
+      if(!manualEl.hidden){
+        const kcal = Number(document.getElementById('add-kcal-'+key).value);
+        const prot = Number(document.getElementById('add-prot-'+key).value) || 0;
+        const carb = Number(document.getElementById('add-carb-'+key).value) || 0;
+        const fat = Number(document.getElementById('add-fat-'+key).value) || 0;
+        if(!kcal){ status.textContent = 'Preenche pelo menos as kcal.'; return; }
+        macros = { kcal, prot, carb, fat };
+      } else {
+        macros = JSON.parse(manualEl.dataset.computed || '{}');
+        if(!macros.kcal){ status.textContent = 'Informa a quantidade primeiro.'; return; }
+      }
+      if(!state.extraItems[key]) state.extraItems[key] = [];
+      state.extraItems[key].push({ id:Date.now(), name, ...macros });
+      openAddPanels.delete(key);
+      renderTimeline(); renderMacros(); renderArc();
+      saveState();
+      return;
+    }
+    if(removeExtra){
+      const key = removeExtra.getAttribute('data-extra-key');
+      const id = Number(removeExtra.getAttribute('data-extra-id'));
+      if(state.extraItems[key]){
+        state.extraItems[key] = state.extraItems[key].filter(x=>x.id!==id);
+      }
+      renderTimeline(); renderMacros(); renderArc();
+      saveState();
+      return;
+    }
+    if(removeOverride){
+      const id = removeOverride.getAttribute('data-remove-override');
+      delete state.overrides[id];
+      renderTimeline(); renderMacros(); renderArc();
+      saveState();
+      return;
+    }
+    if(desvioCalc){
+      const id = desvioCalc.getAttribute('data-desvio-calc');
+      const input = document.getElementById('desvio-input-'+id);
+      const status = document.getElementById('desvio-status-'+id);
+      const text = input.value.trim();
+      const kcal = Number(document.getElementById('desvio-kcal-'+id).value);
+      const prot = Number(document.getElementById('desvio-prot-'+id).value) || 0;
+      const carb = Number(document.getElementById('desvio-carb-'+id).value) || 0;
+      const fat = Number(document.getElementById('desvio-fat-'+id).value) || 0;
+      if(!text){ status.textContent = 'Escreve o que você comeu primeiro.'; return; }
+      if(!kcal){ status.textContent = 'Preenche pelo menos as kcal.'; return; }
+      state.overrides[id] = { text, kcal, prot, carb, fat };
+      state.checked[id] = true;
+      openPanels.delete(id);
+      renderTimeline(); renderMacros(); renderArc();
+      saveState();
+      return;
+    }
+    if(mealBtn){
+      const id = mealBtn.getAttribute('data-meal');
+      state.checked[id] = !state.checked[id];
+      renderTimeline(); renderMacros(); renderArc();
+      saveState();
+      return;
+    }
+  });
+}
+
+function renderWater(){
+  const g = document.getElementById('glasses');
+  g.innerHTML = Array.from({length:WATER_TARGET}).map((_,i)=>
+    `<div class="glass ${i<state.water?'filled':''}"></div>`
+  ).join('');
+  document.getElementById('waterCount').textContent = state.water+' copo'+(state.water===1?'':'s');
+}
+
+function init(){
+  loadState();
+  renderArc();
+  renderMacros();
+  renderTimeline();
+  renderWater();
+  initTimelineEvents();
+
+  document.getElementById('waterPlus').addEventListener('click', ()=>{
+    state.water = Math.min(state.water+1, 20);
+    renderWater();
+    saveState();
+  });
+  document.getElementById('waterMinus').addEventListener('click', ()=>{
+    state.water = Math.max(state.water-1, 0);
+    renderWater();
+    saveState();
+  });
+
+  setInterval(renderArc, 60000);
+}
+init();
+</script>
+</body>
+</html>
