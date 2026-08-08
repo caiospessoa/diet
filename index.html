@@ -90,6 +90,12 @@
   .meal-items li{ padding:5px 0; border-bottom:1px dashed var(--line); display:flex; justify-content:space-between; gap:8px;}
   .meal-items li:last-child{ border-bottom:none; }
   .meal-items li .qty{ color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; font-size:12px; white-space:nowrap; }
+  .qty-edit{ display:flex; align-items:center; gap:5px; flex-shrink:0; }
+  .qty-input{
+    width:48px; text-align:right; border:1px solid var(--line); border-radius:6px; padding:3px 5px;
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink); background:#fff;
+  }
+  .qty-unit{ color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; font-size:12px; white-space:nowrap; }
 
   .option-tabs{ display:flex; gap:8px; margin-top:12px; }
   .option-tab{
@@ -212,37 +218,79 @@
 const MEALS = [
   {
     id:'cafe', accent:'var(--mango)', time:'07h40 – 08h00', title:'Café da Manhã', hour:7.7,
-    items:[['Iogurte zero lactose','150ml'],['Whey protein','24g'],['Banana nanica','1 un'],['Farelo de aveia','20g']],
-    kcal:365, prot:37.5, carb:35, fat:4
+    items:[
+      { name:'Iogurte zero lactose', qty:150, unit:'ml', per:{kcal:0.55,prot:0.045,carb:0.06,fat:0.018} },
+      { name:'Whey protein', qty:24, unit:'g proteína', per:{kcal:4.2,prot:1,carb:0.08,fat:0.04} },
+      { name:'Banana nanica', qty:1, unit:'un', per:{kcal:90,prot:1.1,carb:23,fat:0.3} },
+      { name:'Farelo de aveia', qty:20, unit:'g', per:{kcal:2.46,prot:0.17,carb:0.66,fat:0.07} }
+    ]
   },
   {
     id:'almoco', accent:'var(--sage)', time:'12h00', title:'Almoço', hour:12,
-    items:[['Arroz','100g'],['Feijão','100g'],['Proteína magra (frango / carne / patinho / peixe / lombo)','150g'],['Verduras e legumes','à vontade']],
-    kcal:650, prot:47.5, carb:55, fat:10
+    items:[
+      { name:'Arroz', qty:100, unit:'g', per:{kcal:1.30,prot:0.027,carb:0.28,fat:0.003} },
+      { name:'Feijão', qty:100, unit:'g', per:{kcal:1.27,prot:0.087,carb:0.228,fat:0.005} },
+      { name:'Proteína magra (frango / carne / patinho / peixe / lombo)', qty:150, unit:'g', per:{kcal:1.65,prot:0.31,carb:0,fat:0.036} },
+      { name:'Verduras e legumes', unit:'à vontade', fixed:{kcal:50,prot:2,carb:8,fat:0.5} }
+    ]
   },
   {
     id:'lanche', accent:'var(--azul)', time:'16h00', title:'Lanche', hour:16, hasOptions:true,
     options:[
-      { label:'Opção 1', items:[['Barrinha de proteína','20g proteína'],['Fruta','1 un']], kcal:300, prot:25, carb:35, fat:6 },
-      { label:'Opção 2', items:[['Iogurte zero lactose','150ml'],['Whey protein','1 dose'],['Banana','1 un'],['Aveia em flocos','40g'],['Creatina','5g']], kcal:450, prot:35, carb:45, fat:7 }
+      { label:'Opção 1', items:[
+        { name:'Barrinha de proteína', qty:20, unit:'g proteína', per:{kcal:10,prot:1,carb:1,fat:0.35} },
+        { name:'Fruta', qty:1, unit:'un', per:{kcal:80,prot:0.5,carb:20,fat:0.3} }
+      ]},
+      { label:'Opção 2', items:[
+        { name:'Iogurte zero lactose', qty:150, unit:'ml', per:{kcal:0.55,prot:0.045,carb:0.06,fat:0.018} },
+        { name:'Whey protein', qty:24, unit:'g proteína', per:{kcal:4.2,prot:1,carb:0.08,fat:0.04} },
+        { name:'Banana', qty:1, unit:'un', per:{kcal:90,prot:1.1,carb:23,fat:0.3} },
+        { name:'Aveia em flocos', qty:40, unit:'g', per:{kcal:3.89,prot:0.169,carb:0.66,fat:0.069} },
+        { name:'Creatina', qty:5, unit:'g', per:{kcal:0,prot:0,carb:0,fat:0} }
+      ]}
     ]
   },
   {
     id:'jantar', accent:'var(--plum)', time:'19h00 – 20h00', title:'Jantar', hour:19.5,
-    items:[['Arroz','100g'],['Feijão','100g'],['Proteína magra (frango / carne / patinho / peixe / lombo)','150g'],['Verduras e legumes','à vontade']],
-    kcal:650, prot:47.5, carb:55, fat:10
+    items:[
+      { name:'Arroz', qty:100, unit:'g', per:{kcal:1.30,prot:0.027,carb:0.28,fat:0.003} },
+      { name:'Feijão', qty:100, unit:'g', per:{kcal:1.27,prot:0.087,carb:0.228,fat:0.005} },
+      { name:'Proteína magra (frango / carne / patinho / peixe / lombo)', qty:150, unit:'g', per:{kcal:1.65,prot:0.31,carb:0,fat:0.036} },
+      { name:'Verduras e legumes', unit:'à vontade', fixed:{kcal:50,prot:2,carb:8,fat:0.5} }
+    ]
   }
 ];
 const TARGETS = { kcal:2300, prot:180, carb:210, fat:40 };
 const WATER_TARGET = 11;
 const DAY_START = 6, DAY_END = 22;
 
+function itemKey(mealId, optIdx, itemIdx){
+  return optIdx==null ? `${mealId}_${itemIdx}` : `${mealId}_opt${optIdx}_${itemIdx}`;
+}
+function getQty(item, key){
+  const stored = state.quantities[key];
+  return (stored!=null && stored!=='') ? Number(stored) : item.qty;
+}
+function itemMacros(item, key){
+  if(item.fixed) return item.fixed;
+  const q = getQty(item, key);
+  return { kcal:q*item.per.kcal, prot:q*item.per.prot, carb:q*item.per.carb, fat:q*item.per.fat };
+}
+function sumItems(items, mealId, optIdx){
+  const t = {kcal:0, prot:0, carb:0, fat:0};
+  items.forEach((it,idx)=>{
+    const m = itemMacros(it, itemKey(mealId, optIdx, idx));
+    t.kcal+=m.kcal; t.prot+=m.prot; t.carb+=m.carb; t.fat+=m.fat;
+  });
+  return t;
+}
+
 function dateKey(){
   const d = new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
-let state = { checked:{}, lancheOption:0, water:0, overrides:{} };
+let state = { checked:{}, lancheOption:0, water:0, overrides:{}, quantities:{} };
 let openPanels = new Set();
 
 function loadState(){
@@ -251,6 +299,7 @@ function loadState(){
     if(raw){ state = JSON.parse(raw); }
   }catch(e){ /* sem dados salvos ainda, mantém padrão */ }
   if(!state.overrides) state.overrides = {};
+  if(!state.quantities) state.quantities = {};
 }
 function saveState(){
   try{ localStorage.setItem('day-log:'+dateKey(), JSON.stringify(state)); }
@@ -263,12 +312,13 @@ function computeTotals(){
     if(!state.checked[m.id]) return;
     const ov = state.overrides[m.id];
     if(ov){ t.kcal+=ov.kcal; t.prot+=ov.prot; t.carb+=ov.carb; t.fat+=ov.fat; return; }
+    let o;
     if(m.hasOptions){
-      const o = m.options[state.lancheOption];
-      t.kcal+=o.kcal; t.prot+=o.prot; t.carb+=o.carb; t.fat+=o.fat;
+      o = sumItems(m.options[state.lancheOption].items, m.id, state.lancheOption);
     } else {
-      t.kcal+=m.kcal; t.prot+=m.prot; t.carb+=m.carb; t.fat+=m.fat;
+      o = sumItems(m.items, m.id, null);
     }
+    t.kcal+=o.kcal; t.prot+=o.prot; t.carb+=o.carb; t.fat+=o.fat;
   });
   return t;
 }
@@ -325,6 +375,36 @@ function escapeHtml(str){
   return String(str).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+function chipsInner(t){
+  return `<span class="chip">${Math.round(t.kcal)} kcal</span><span class="chip">${t.prot.toFixed(1)}g prot</span><span class="chip">${t.carb.toFixed(1)}g carb</span><span class="chip">${t.fat.toFixed(1)}g gord</span>`;
+}
+function renderChips(t, id){
+  return `<div class="macro-chips" id="${id}">${chipsInner(t)}</div>`;
+}
+function refreshMealChips(mealId){
+  const m = MEALS.find(mm=>mm.id===mealId);
+  if(!m || state.overrides[mealId]) return;
+  const items = m.hasOptions ? m.options[state.lancheOption].items : m.items;
+  const optIdx = m.hasOptions ? state.lancheOption : null;
+  const t = sumItems(items, mealId, optIdx);
+  const chipsEl = document.getElementById(`chips-${mealId}`);
+  if(chipsEl) chipsEl.innerHTML = chipsInner(t);
+}
+
+function renderItemsList(items, mealId, optIdx){
+  return items.map((it,idx)=>{
+    if(it.fixed){
+      return `<li><span>${it.name}</span><span class="qty">${it.unit}</span></li>`;
+    }
+    const key = itemKey(mealId, optIdx, idx);
+    const q = getQty(it, key);
+    return `<li><span>${it.name}</span><span class="qty-edit">
+      <input type="number" inputmode="decimal" class="qty-input" data-qty-key="${key}" data-meal-ref="${mealId}" value="${q}">
+      <span class="qty-unit">${it.unit}</span>
+    </span></li>`;
+  }).join('');
+}
+
 function renderTimeline(){
   const el = document.getElementById('timeline');
   el.innerHTML = MEALS.map(m=>{
@@ -343,22 +423,17 @@ function renderTimeline(){
         <button class="link-btn" data-remove-override="${m.id}">↺ voltar ao plano original</button>
       `;
     } else {
-      let itemsHtml, extra;
+      let itemsHtml, extra, chipsId = `chips-${m.id}`;
       if(m.hasOptions){
         const activeIdx = state.lancheOption;
-        itemsHtml = m.options[activeIdx].items.map(([n,q])=>`<li><span>${n}</span><span class="qty">${q}</span></li>`).join('');
+        itemsHtml = renderItemsList(m.options[activeIdx].items, m.id, activeIdx);
         extra = `<div class="option-tabs">` + m.options.map((o,i)=>
           `<div class="option-tab ${i===activeIdx?'active':''}" data-lanche-opt="${i}">${o.label}</div>`
         ).join('') + `</div>`;
-        const o = m.options[activeIdx];
-        extra += `<div class="macro-chips">
-          <span class="chip">${o.kcal} kcal</span><span class="chip">${o.prot}g prot</span><span class="chip">${o.carb}g carb</span><span class="chip">${o.fat}g gord</span>
-        </div>`;
+        extra += renderChips(sumItems(m.options[activeIdx].items, m.id, activeIdx), chipsId);
       } else {
-        itemsHtml = m.items.map(([n,q])=>`<li><span>${n}</span><span class="qty">${q}</span></li>`).join('');
-        extra = `<div class="macro-chips">
-          <span class="chip">${m.kcal} kcal</span><span class="chip">${m.prot}g prot</span><span class="chip">${m.carb}g carb</span><span class="chip">${m.fat}g gord</span>
-        </div>`;
+        itemsHtml = renderItemsList(m.items, m.id, null);
+        extra = renderChips(sumItems(m.items, m.id, null), chipsId);
       }
       body = `
         <ul class="meal-items">${itemsHtml}</ul>
@@ -395,6 +470,21 @@ function renderTimeline(){
 
 function initTimelineEvents(){
   const el = document.getElementById('timeline');
+
+  el.addEventListener('input', (ev)=>{
+    const qtyInput = ev.target.closest('[data-qty-key]');
+    if(!qtyInput) return;
+    const key = qtyInput.getAttribute('data-qty-key');
+    const mealId = qtyInput.getAttribute('data-meal-ref');
+    const val = qtyInput.value;
+    if(val === ''){ delete state.quantities[key]; }
+    else { state.quantities[key] = Number(val); }
+    refreshMealChips(mealId);
+    renderMacros();
+    renderArc();
+    saveState();
+  });
+
   el.addEventListener('click', async (ev)=>{
     const lancheOpt = ev.target.closest('[data-lanche-opt]');
     const desvioToggle = ev.target.closest('[data-desvio-toggle]');
